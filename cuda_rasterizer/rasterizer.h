@@ -53,6 +53,7 @@ namespace CudaRasterizer
 			float* out_alpha,
 			float* out_depth_var,
 			int* radii = nullptr,
+			int* n_touched = nullptr,
 			bool debug = false);
 
 		static void backward(

@@ -219,6 +219,7 @@ int CudaRasterizer::Rasterizer::forward(
 	float* out_alpha,
 	float* out_depth_var,
 	int* radii,
+	int* n_touched,
 	bool debug)
 {
 	const float focal_y = height / (2.0f * tan_fovy);
@@ -335,7 +336,8 @@ int CudaRasterizer::Rasterizer::forward(
 		background,
 		out_color,
 		out_depth,
-		out_depth_var), debug);
+		out_depth_var,
+		n_touched), debug);
 
 	return num_rendered;
 }
