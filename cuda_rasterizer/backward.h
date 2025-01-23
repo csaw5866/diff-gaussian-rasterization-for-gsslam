@@ -73,6 +73,36 @@ namespace BACKWARD
 		float3* dL_dcam_t_w2c,
 		bool mapping_mode,
 		bool tracking_mode);
+
+	void preprocessspherical(
+		int P, int D, int M,
+		const float3* means,
+		const int* radii,
+		const glm::vec4* cam_q_w2c,
+		const float* shs,
+		const bool* clamped,
+		const glm::vec3* scales,
+		const glm::vec4* rotations,
+		const float scale_modifier,
+		const float* cov3Ds,
+		const float* view,
+		const float* proj,
+		const float focal_x, float focal_y,
+		const float tan_fovx, float tan_fovy,
+		const glm::vec3* campos,
+		const float3* dL_dmean2D,
+		const float* dL_dconics,
+		glm::vec3* dL_dmeans,
+		float* dL_dcolor,
+		float* dL_ddepthz, 
+		float* dL_dcov3D,
+		float* dL_dsh,
+		glm::vec3* dL_dscale,
+		glm::vec4* dL_drot,
+		float4* dL_dcam_q_w2c,
+		float3* dL_dcam_t_w2c,
+		bool mapping_mode,
+		bool tracking_mode);
 }
 
 #endif
