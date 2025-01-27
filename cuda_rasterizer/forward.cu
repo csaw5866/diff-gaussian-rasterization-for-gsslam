@@ -121,16 +121,12 @@ __device__ float3 computesphericalCov2D(const float3& mean, float focal_x, float
 	// Transposes used to account for row-/column-major conventions.
 	float3 t = transformPoint4x3(mean, viewmatrix);
 
-	const float limx = 1.3f * tan_fovx;
-	const float limy = 1.3f * tan_fovy;
-	const float txtz = t.x / t.z;
-	const float tytz = t.y / t.z;
-	t.x = min(limx, max(-limx, txtz)) * t.z;
-	t.y = min(limy, max(-limy, tytz)) * t.z;
+    float t_length = sqrtf(t.x * t.x + t.y * t.y + t.z * t.z);
 
+    float3 t_unit_focal = {0.0f, 0.0f, t_length};
 	glm::mat3 J = glm::mat3(
-		focal_x / t.z, 0.0f, -(focal_x * t.x) / (t.z * t.z),
-		0.0f, focal_y / t.z, -(focal_y * t.y) / (t.z * t.z),
+		focal_x / t_unit_focal.z, 0.0f, -(focal_x * t_unit_focal.x) / (t_unit_focal.z * t_unit_focal.z),
+		0.0f, focal_x / t_unit_focal.z, -(focal_x * t_unit_focal.y) / (t_unit_focal.z * t_unit_focal.z),
 		0, 0, 0);
 
 	glm::mat3 W = glm::mat3(
@@ -340,14 +336,12 @@ __global__ void preprocesssphericalCUDA(int P, int D, int M,
 
 	// Perform near culling, quit if outside.
 	float3 p_view;
-	if (!in_frustum(idx, orig_points, viewmatrix, projmatrix, prefiltered, p_view))
+	if (!in_sphere(idx, orig_points, viewmatrix, projmatrix, cam_pos, prefiltered, p_view))
 		return;
 
 	// Transform point by projecting
 	float3 p_orig = { orig_points[3 * idx], orig_points[3 * idx + 1], orig_points[3 * idx + 2] };
-	float4 p_hom = transformPoint4x4(p_orig, projmatrix);
-	float p_w = 1.0f / (p_hom.w + 0.0000001f);
-	float3 p_proj = { p_hom.x * p_w, p_hom.y * p_w, p_hom.z * p_w };
+	float3 p_proj = {p_view.x, p_view.y, 2.0 * (p_view.z - 0.2f) / (100.0f - 0.2f) - 1.0};
 
 	// If 3D covariance matrix is precomputed, use it, otherwise compute
 	// from scaling and rotation parameters. 
@@ -363,7 +357,7 @@ __global__ void preprocesssphericalCUDA(int P, int D, int M,
 	}
 
 	// Compute 2D screen-space covariance matrix
-	float3 cov = computeCov2D(p_orig, focal_x, focal_y, tan_fovx, tan_fovy, cov3D, viewmatrix);
+	float3 cov = computesphericalCov2D(p_orig, focal_x, focal_y, tan_fovx, tan_fovy, cov3D, viewmatrix);
 
 	// Invert covariance (EWA algorithm)
 	float det = (cov.x * cov.z - cov.y * cov.y);

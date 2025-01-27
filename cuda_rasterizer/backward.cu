@@ -316,18 +316,13 @@ __global__ void computesphericalCov2DCUDA(int P,
 		float3 dL_dconic = { dL_dconics[4 * idx], dL_dconics[4 * idx + 1], dL_dconics[4 * idx + 3] };
 		float3 t = transformPoint4x3(mean, view_matrix); // camera
 		
-		const float limx = 1.3f * tan_fovx;
-		const float limy = 1.3f * tan_fovy;
-		const float txtz = t.x / t.z;
-		const float tytz = t.y / t.z;
-		t.x = min(limx, max(-limx, txtz)) * t.z;
-		t.y = min(limy, max(-limy, tytz)) * t.z;
-		
-		const float x_grad_mul = txtz < -limx || txtz > limx ? 0 : 1;
-		const float y_grad_mul = tytz < -limy || tytz > limy ? 0 : 1;
+		float t_length = sqrtf(t.x * t.x + t.y * t.y + t.z * t.z);
 
-		glm::mat3 J = glm::mat3(h_x / t.z, 0.0f, -(h_x * t.x) / (t.z * t.z),
-			0.0f, h_y / t.z, -(h_y * t.y) / (t.z * t.z),
+		float3 t_unit_focal = {0.0f, 0.0f, t_length};
+
+		glm::mat3 J = glm::mat3(
+			h_x / t_unit_focal.z, 0.0f, -(h_x * t_unit_focal.x) / (t_unit_focal.z * t_unit_focal.z),
+			0.0f, h_x / t_unit_focal.z, -(h_x * t_unit_focal.y) / (t_unit_focal.z * t_unit_focal.z),
 			0, 0, 0);
 
 		glm::mat3 W = glm::mat3(
@@ -411,8 +406,8 @@ __global__ void computesphericalCov2DCUDA(int P,
 		float tz3 = tz2 * tz;
 
 		// Gradients of loss w.r.t. transformed Gaussian mean t
-		float dL_dtx = x_grad_mul * -h_x * tz2 * dL_dJ02;
-		float dL_dty = y_grad_mul * -h_y * tz2 * dL_dJ12;
+		float dL_dtx = -h_x * tz2 * dL_dJ02;
+		float dL_dty = -h_y * tz2 * dL_dJ12;
 		float dL_dtz = -h_x * tz2 * dL_dJ00 - h_y * tz2 * dL_dJ11 + (2 * h_x * t.x) * tz3 * dL_dJ02 + (2 * h_y * t.y) * tz3 * dL_dJ12;
 
 	
